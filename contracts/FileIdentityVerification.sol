@@ -1,4 +1,4 @@
-pragma solidity >=0.4.21<0.6.0;
+pragma solidity ^0.5.0;
 
 // ---------------------------------------------
 // FileIdentityVerification.sol
@@ -14,16 +14,16 @@ pragma solidity >=0.4.21<0.6.0;
 contract FileIdentityVerification {
 
     struct FileIdentity {
-        bytes32 keccak256hash;
-        string sha3hash;
+        bytes32 fileId;
+
+        bytes md5;
+        bytes sha256;
+        bytes sha512;
+
         address registrant;
         uint timestamp;
         uint isExist;
     }
-
-    // Owner of Smart Contract
-    // スマートコントラクトのオーナー
-    address public owner;
 
     // Cumulative number of hashes registered
     // ハッシュを登録した累計回数
@@ -37,45 +37,29 @@ contract FileIdentityVerification {
     // ハッシュの一覧を保持する
     mapping(bytes32 => FileIdentity) private fileIdentityList;
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, 'Only the owner is available.');
-        _;
-    }
-
     string private NO_DATA = 'Data does not exist';
     string private ALREADY_REGISTERED = 'It is already registered';
     string private NO_DELETE_AUTHORITY = 'You do not have permission to delete';
 
     // Events
-    event RegisterFileHash(address indexed _from, bytes32 _keccak256hash, string _sha3hash, uint _timestamp);
-    event RemoveFileHash(address indexed _from, bytes32 _keccak256hash, string _sha3hash, uint _timestamp);
+    event FileHash(address indexed _from, bytes32 _fileId, bytes _md5, bytes _sha256, bytes _sha512, uint _timestamp);
 
     constructor() public {
-        // The owner address is maintained.
-        owner = msg.sender;
-
         number_of_hashes_registered = 0;
         number_of_valid_hashes = 0;
     }
 
     // ファイル情報を照会
-    function getFileIdentity(bytes32 _keccak256hash) public view
-    returns (bytes32 keccak256hash, string sha3hash, address registrant, uint timestamp, uint isExist){
-        FileIdentity memory d = fileIdentityList[_keccak256hash];
-        return (d.keccak256hash, d.sha3hash, d.registrant, d.timestamp, d.isExist);
-    }
-
-    // Obtain a hash value
-    // ハッシュ値を得る
-    function getKeccak256Hash(string _sha3hash) public pure returns (bytes32) {
-        bytes32 keccak256hash = keccak256(abi.encodePacked(_sha3hash));
-        return keccak256hash;
+    function getFileIdentity(bytes32 fileId) public view
+    returns (bytes32 _fileId, bytes memory _md5, bytes memory _sha256, bytes memory _sha512, address _registrant, uint _timestamp, uint _isExist){
+        FileIdentity memory fi = fileIdentityList[fileId];
+        return (fi.fileId, fi.md5, fi.sha256, fi.sha512, fi.registrant, fi.timestamp, fi.isExist);
     }
 
     // File existence check
     // ファイルの存在チェック
-    function isExist(bytes32 _keccak256hash) public view returns (bool) {
-        if (fileIdentityList[_keccak256hash].isExist == 1) {
+    function isExist(bytes32 fileId) public view returns (bool) {
+        if (fileIdentityList[fileId].isExist == 1) {
             // exist
             return true;
         }
@@ -85,37 +69,27 @@ contract FileIdentityVerification {
         }
     }
 
-    // Whether you are the owner of the file
-    // あなたがファイルの登録者であるか
-    function isYourRegistration(bytes32 _keccak256hash) public view returns (bool) {
-
-        require(isExist(_keccak256hash) == true, NO_DATA);
-
-        if (msg.sender == fileIdentityList[_keccak256hash].registrant) {
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
     // Register file hash
     // ファイルハッシュを登録する
-    function registerFileHash(string _sha3hash) public returns (bool) {
+    function registerFileHash(string memory _md5, string memory _sha256, string memory _sha512) public returns (bool) {
 
-        bytes32 _keccak256hash = getKeccak256Hash(_sha3hash);
+        bytes32 fileId = keccak256(abi.encodePacked(bytes(_md5), bytes(_sha256), bytes(_sha512)));
 
-        require(isExist(_keccak256hash) == false, ALREADY_REGISTERED);
+        require(isExist(fileId) == false, ALREADY_REGISTERED);
 
         uint ts = block.timestamp;
 
-        fileIdentityList[_keccak256hash].isExist = 1;
-        fileIdentityList[_keccak256hash].keccak256hash = _keccak256hash;
-        fileIdentityList[_keccak256hash].sha3hash = _sha3hash;
-        fileIdentityList[_keccak256hash].registrant = msg.sender;
-        fileIdentityList[_keccak256hash].timestamp = ts;
+        fileIdentityList[fileId].isExist = 1;
+        fileIdentityList[fileId].fileId = fileId;
 
-        emit RegisterFileHash(msg.sender, _keccak256hash, _sha3hash, ts);
+        fileIdentityList[fileId].md5 = bytes(_md5);
+        fileIdentityList[fileId].sha256 = bytes(_sha256);
+        fileIdentityList[fileId].sha512 = bytes(_sha512);
+
+        fileIdentityList[fileId].registrant = msg.sender;
+        fileIdentityList[fileId].timestamp = ts;
+
+        emit FileHash(msg.sender, fileId, bytes(_md5), bytes(_sha256), bytes(_sha512), ts);
 
         // Add actual registration number
         // 実際の登録数
@@ -126,37 +100,6 @@ contract FileIdentityVerification {
         ++number_of_hashes_registered;
 
         return true;
-    }
-
-    // remove file hash
-    // ファイルハッシュを抹消する
-    function removeFileHash(bytes32 _keccak256hash) public returns (bool) {
-
-        require(isExist(_keccak256hash) == true, NO_DATA);
-        require(isYourRegistration(_keccak256hash) == true, NO_DELETE_AUTHORITY);
-
-        uint ts = block.timestamp;
-
-        bytes32 o_keccak256hash = fileIdentityList[_keccak256hash].keccak256hash;
-        string memory o_sha3hash = fileIdentityList[_keccak256hash].sha3hash;
-
-        delete fileIdentityList[_keccak256hash];
-        emit RemoveFileHash(msg.sender, o_keccak256hash, o_sha3hash, ts);
-
-        // Reduce the actual number of registrations
-        // 実際の登録数を減らす
-        --number_of_valid_hashes;
-
-        return true;
-    }
-
-    // ---------------------------------------------
-    // Destruction of a contract (only owner)
-    // ---------------------------------------------
-    function destory(string _delete_me) public onlyOwner {
-        // Delete by giving keyword
-        require(getKeccak256Hash('delete me') == getKeccak256Hash(_delete_me), 'The keywords do not match.');
-        selfdestruct(owner);
     }
 
 }
