@@ -69,11 +69,15 @@ contract FileIdentityVerification {
         }
     }
 
+    function getFileId(string memory _md5, string memory _sha256, string memory _sha512) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(bytes(_md5), bytes(_sha256), bytes(_sha512)));
+    }
+
     // Register file hash
     // ファイルハッシュを登録する
     function registerFileHash(string memory _md5, string memory _sha256, string memory _sha512) public returns (bool) {
 
-        bytes32 fileId = keccak256(abi.encodePacked(bytes(_md5), bytes(_sha256), bytes(_sha512)));
+        bytes32 fileId = getFileId(_md5, _sha256, _sha512);
 
         require(isExist(fileId) == false, ALREADY_REGISTERED);
 
