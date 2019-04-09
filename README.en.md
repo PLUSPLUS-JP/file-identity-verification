@@ -34,9 +34,9 @@ As file information is recorded, there is no concern such as falsification of th
 
 *argument*
 
-- string `_md5` : MD5ハッシュ値
-- string `_sha256` : SHA256ハッシュ値
-- string `_sha512` : SHA512ハッシュ値
+- string `_md5` : MD5 hash value
+- string `_sha256` : SHA256 hash value
+- string `_sha512` : SHA512 hash value
 
 *Return value*
 
@@ -56,9 +56,9 @@ function getFileId(string memory _md5, string memory _sha256, string memory _sha
 
 *argument*
 
-- string `_md5` : MD5ハッシュ値
-- string `_sha256` : SHA256ハッシュ値
-- string `_sha512` : SHA512ハッシュ値
+- string `_md5` : MD5 hash value
+- string `_sha256` : SHA256 hash value
+- string `_sha512` : SHA512 hash value
 
 *function*
 
@@ -70,19 +70,19 @@ function registerFileHash(string memory _md5, string memory _sha256, string memo
 
 ### Erase file
 
-抹消処理は実装しない
+Do not implement the erasure process
 
-### ファイルが登録済みか？
+### Is the file registered?
 
-ファイルIDは前述の「ファイルIDの計算」で取得する。
+The file ID is acquired by the above-mentioned "calculation of file ID".
 
 *argument*
 
-- string `fileId` : ファイルID
+- string `fileId` : File ID
 
-*戻り値*
+*Return value*
 
-- bool : true:登録済み false:未登録
+- bool: true: Registered false: Not registered
 
 *function*
 
@@ -94,21 +94,21 @@ function isExist(bytes32 fileId) public view returns (bool);
 
 ### Display file information
 
-ファイルIDは前述の「ファイルIDの計算」で取得する。
+The file ID is acquired by the above-mentioned "calculation of file ID".
 
 *argument*
 
-- string `fileId` : ファイルID
+- string `fileId` : File ID
 
-*戻り値*
+*Return value*
 
-- bytes32 `_fileId` ファイルID
-- bytes `_md5` : MD5ハッシュ値
-- bytes `_sha256` : SHA256ハッシュ値
-- bytes `_sha512` : SHA512ハッシュ値
-- address `_registrant` : 登録者EOA
-- uint _`timestamp` : 取り込まれたブロックのタイムスタンプ
-- uint `_isExist` : 登録済みの場合は常に `1`
+- bytes32 `_fileId` File ID
+- bytes `_md5` : MD5 hash value
+- bytes `_sha256` : SHA256 hash value
+- bytes `_sha512` : SHA512 hash value
+- address `_registrant` : Registrant EOA
+- uint _`timestamp` : Time stamp of captured block
+- uint `_isExist` : Always `1` if registered
 
 *function*
 
